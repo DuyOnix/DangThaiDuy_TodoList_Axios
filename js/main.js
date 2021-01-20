@@ -1,14 +1,28 @@
 var service = new TaskService();
 var validation = new Validation();
+var isLoading = false;
 getList();
 
 function getEle(id) {
     return document.getElementById(id);
 }
 
+function checkLoading() {
+    if (isLoading) {
+        getEle("loading").style.display = "block";
+    }
+    else {
+        getEle("loading").style.display = "none";
+    }
+}
+
 function getList() {
+    isLoading = true;
+    checkLoading();
     service.getListTask()
         .then(function (result) {
+            isLoading = false;
+            checkLoading();
             createTable(result.data);
         })
         .catch(function (err) {
@@ -17,16 +31,26 @@ function getList() {
 }
 
 getEle("addItem").addEventListener("click", function () {
+    isLoading = true;
+    checkLoading();
+    getEle("notiInput").innerHTML = "";
     var textTodo = getEle("newTask").value;
-    var isValid = validation.checkInput(textTodo, "notiInput", "(*) Task empty");
+    var isValid = true;
     service.getListTask()
         .then(function (result) {
+            isValid &&= validation.checkInput(textTodo, "notiInput", "(*) Task empty");
             isValid &&= validation.checkExist(textTodo, "notiInput", "(*) Task already existed", result.data);
-            if (!isValid) return;
+            if (!isValid) {
+                isLoading = false;
+                checkLoading();
+                return;
+            }
             var task = new Task("", textTodo, "todo");
             return service.addTask(task);
         })
         .then(function (result) {
+            isLoading = false;
+            checkLoading();
             if (!isValid) return;
             getList();
             getEle("newTask").value = "";
@@ -66,8 +90,12 @@ function createTable(arr) {
 }
 
 function deleteToDo(id) {
+    isLoading = true;
+    checkLoading();
     service.deleteTask(id)
         .then(function (result) {
+            isLoading = false;
+            checkLoading();
             getList();
             alert("Delete Success!");
         })
@@ -77,6 +105,8 @@ function deleteToDo(id) {
 }
 
 function changeStatus(id) {
+    isLoading = true;
+    checkLoading();
     service.getTaskById(id)
         .then(function (result) {
             var task = result.data;
@@ -87,6 +117,8 @@ function changeStatus(id) {
             return service.updateTask(task);
         })
         .then(function (result) {
+            isLoading = false;
+            checkLoading();
             getList();
             alert("Change Status Success!");
         })
